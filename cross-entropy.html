@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=1280">
+<meta name="description" content="직접 정한 세 가지 예측 확률로 PyTorch CrossEntropyLoss의 의미를 살펴보는 가로형 강의 자료.">
+<title>교차 엔트로피 코드 해설 · PyTorch</title>
+<style>
+:root{--paper:#f6f4ec;--ink:#173e32;--muted:#66766e;--line:#cdd5ca;--accent:#d6eb9e;--green:#356b4e;--code:#122e27;--mono:ui-monospace,SFMono-Regular,Consolas,monospace}
+*{box-sizing:border-box}body{margin:0;min-width:1280px;background:#e2e5dd;color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo',sans-serif;-webkit-font-smoothing:antialiased}a{color:inherit;text-underline-offset:4px}button{font:inherit;cursor:pointer;border:1px solid #9faf9e;background:transparent;color:var(--ink);padding:10px 16px;border-radius:5px;font-size:17px}button:hover{background:#e5ecd8}button[aria-pressed=true],button[aria-current=page]{background:var(--accent);border-color:var(--green)}button:disabled{opacity:.4;cursor:default}button:focus-visible,a:focus-visible{outline:3px solid #b95834;outline-offset:3px}h1,h2,h3,p{margin:0}h1,h2{font-size:43px;line-height:1.2;letter-spacing:-1.4px}h3{font-size:25px;margin-bottom:16px}p{font-size:23px;line-height:1.6}code,pre{font-family:var(--mono)}code{font-size:.9em}.app{width:1280px;margin:18px auto}.stage{width:1280px;height:720px;background:var(--paper);position:relative;box-shadow:0 12px 48px #18322416;overflow:hidden}.slide{position:absolute;inset:0;padding:48px 64px 75px;display:none}.slide.active{display:block}.eyebrow{color:var(--muted);letter-spacing:1px;font-size:16px;font-weight:650;margin-bottom:18px}.lead{color:var(--muted);font-size:24px;margin:18px 0 26px}.minor{font-size:18px;color:var(--muted);line-height:1.6}.cols{display:grid;grid-template-columns:1fr 1fr;gap:32px}.callout{font-size:25px;line-height:1.6;border-left:4px solid var(--green);padding-left:20px;margin-top:24px}.foot{position:absolute;bottom:24px;left:64px;right:64px;border-top:1px solid var(--line);padding-top:13px;display:flex;justify-content:space-between;font-size:14px;color:var(--muted)}table{width:100%;border-collapse:collapse;font-size:22px}th,td{padding:19px 15px;text-align:left;border-bottom:1px solid var(--line)}th{font-size:17px;color:var(--muted);font-weight:500}.good{background:#e7eddc}.metric{font-size:38px;font-family:var(--mono);font-weight:700}.toolbar{width:1280px;height:70px;display:flex;align-items:center;gap:14px;padding:14px 24px;background:#f0f2e9;border-top:1px solid var(--line)}.toolbar button{font-size:15px;padding:8px 13px}.pages{display:flex;justify-content:center;gap:9px;flex:1}.pages button{width:32px;padding:8px 0}.counter{font-family:var(--mono);min-width:60px;text-align:center}.toolbar a{font-size:15px}.row{display:flex;gap:12px;align-items:center;margin:20px 0}.step-code{background:var(--code);color:#f3f5e9;padding:24px;white-space:pre;line-height:1.65;font-size:18px;overflow:auto;margin:0}.step-code.small{font-size:17px;line-height:1.6}.step-note{margin-top:22px}.grid{display:grid;grid-template-columns:44px repeat(10,1fr);gap:5px;align-items:center;margin:22px 0}.grid span{padding:15px 0;text-align:center;font-size:18px;background:#e7ebdf;font-family:var(--mono)}.grid .head{background:transparent;font-size:15px;color:var(--muted)}.grid .truth{background:var(--accent);font-weight:750}.grid .chosen{outline:2px solid #b95834;outline-offset:-2px}.bars{display:flex;align-items:flex-end;height:190px;gap:12px;margin:28px 0 40px}.barcol{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:100%;position:relative}.bar{background:#a9bd96;width:100%;min-height:2px}.barcol.target .bar{background:var(--green)}.value{font-size:14px;font-family:var(--mono);margin-bottom:6px}.label{position:absolute;bottom:-28px;font-size:17px}.flow{padding:22px 26px;background:#e7ecdf;margin-bottom:24px}.flow p{font-size:21px}.flow strong{display:block;font-size:24px;margin-bottom:14px}.output{background:#e7ecdf;padding:24px;font-size:18px;line-height:1.75;white-space:pre-wrap;min-height:205px;margin:0}.full-code{font-size:15px;line-height:1.48;height:430px;overflow:auto;padding:20px;background:var(--code);color:#f3f5e9;margin:0;white-space:pre}.summary{font-size:38px;line-height:1.55;margin:32px 0}.answer{min-height:65px;font-size:22px;line-height:1.6;margin:20px 0;color:var(--green)}.app:fullscreen{margin:0;width:100vw;height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#e2e5dd;overflow:auto}.app:fullscreen .stage,.app:fullscreen .toolbar{flex-shrink:0}
+@media print{body{background:white;min-width:0}.app{margin:0}.stage{height:auto;overflow:visible;box-shadow:none}.slide{position:relative;display:block!important;height:720px;break-after:page}.toolbar{display:none}@page{size:1280px 720px;margin:0}}
+</style>
+</head>
+<body><main class="app" id="app"><div class="stage" aria-label="교차 엔트로피 해설 슬라이드">
+<section class="slide active" data-title="이 코드가 있는 이유">
+ <div class="eyebrow">PYTORCH · CROSS ENTROPY</div><h1>정답을 얼마나 확신했는지 비교합니다</h1>
+ <p class="lead">비교를 위해 확률을 직접 정했습니다. 세 상황의 정답은 모두 숫자 7입니다.</p>
+ <table><thead><tr><th>직접 만든 상황</th><th>정답 7의 확률</th><th>예측한 숫자</th><th>Loss(손실)</th></tr></thead><tbody>
+ <tr><td>A · 정답에 40%</td><td>40%</td><td>7 · 정답</td><td class="metric">0.9163</td></tr>
+ <tr class="good"><td>B · 정답에 90%</td><td>90%</td><td>7 · 정답</td><td class="metric">0.1054</td></tr>
+ <tr><td>C · 다른 숫자에 91%</td><td>1%</td><td>3 · 오답</td><td class="metric">4.6052</td></tr></tbody></table>
+ <p class="callout">A와 B는 둘 다 맞혔습니다.<br>정답에 더 높은 확률을 준 B의 손실이 더 작습니다.</p>
+ <footer class="foot"><span>직접 정한 예측 확률 · 실제 모델을 학습시킨 결과와 구분</span><span>01 / 05</span></footer>
+</section>
+<section class="slide" data-title="확률 표를 만드는 과정">
+ <div class="eyebrow">01 · 확률 준비</div><h2>3개 상황 × 숫자 후보 10개</h2><p class="lead">각 행이 한 상황입니다. 열 번호 0~9는 숫자 후보입니다.</p>
+ <div class="row" id="case-buttons"><button data-case="0" aria-pressed="true">A · 정답에 40%</button><button data-case="1" aria-pressed="false">B · 정답에 90%</button><button data-case="2" aria-pressed="false">C · 정답에 1%</button></div>
+ <div class="cols"><div><pre class="step-code small" id="case-code"></pre><p id="case-note" class="step-note"></p><p class="minor" style="margin-top:16px"><code>torch.full((3, 10), 0.01)</code>로 모든 칸을<br>우선 1%로 채운 뒤, 각 상황에 맞게 바꿉니다.</p></div><div><div class="bars" id="bars"></div><p id="case-result"></p><p class="minor" style="margin-top:12px">진한 막대: 정답 7 · 수치는 설명용 확률</p></div></div>
+ <footer class="foot"><span>행 인덱스 0 = A, 1 = B, 2 = C · 열 인덱스 7 = 숫자 7</span><span>02 / 05</span></footer>
+</section>
+<section class="slide" data-title="log와 정답 텐서의 역할">
+ <div class="eyebrow">02 · 손실 함수의 입력</div><h2>만든 확률을 손실 함수에 연결합니다</h2><p class="lead">CrossEntropyLoss(교차 엔트로피 손실)는 점수와 정답 번호를 받습니다.</p>
+ <div class="cols"><div><pre class="step-code">case_logits = case_probs.log()
+case_y = torch.tensor(
+    [7, 7, 7], dtype=torch.long
+)</pre><p class="step-note"><code>.log()</code>는 위 표의 확률을<br>재현하는 Logits(로짓)를 만듭니다.</p><p class="minor" style="margin-top:16px">이 점수에 Softmax(소프트맥스)를 적용하면<br>직접 정했던 확률로 돌아옵니다.</p></div>
+ <div><div class="flow"><strong>이 예제의 준비 순서</strong><p>직접 정한 확률 → log() → 설명용 점수</p></div><div class="flow"><strong>실제 모델에서의 순서</strong><p>모델의 마지막 Linear → 출력 점수</p></div><p><code>[7, 7, 7]</code>은<br>“세 상황의 정답이 모두 7”이라는 뜻입니다.</p></div></div>
+ <footer class="foot"><span>실제 모델에서는 마지막 Linear의 출력 점수를 CrossEntropyLoss에 전달합니다.</span><span>03 / 05</span></footer>
+</section>
+<section class="slide" data-title="코드와 실제 실행 결과">
+ <div class="eyebrow">03 · 출력 해석</div><h2>세 손실을 따로 보고, 평균도 봅니다</h2><p class="lead" style="margin-bottom:20px">아래 코드를 PyTorch에서 실행해 확인한 결과입니다.</p>
+ <div class="cols" style="grid-template-columns:1.2fr 1fr"><pre class="full-code" id="full-code">&quot;&quot;&quot;설명용으로 직접 정한 확률 세 가지를 비교합니다.&quot;&quot;&quot;
+import torch
+from torch import nn
+
+# 비교를 위해 직접 만든 확률입니다. 실제 모델의 출력이 아닙니다.
+case_probs = torch.full((3, 10), 0.01)
+case_probs[0] = 0.60 / 9
+case_probs[0, 7] = 0.40
+case_probs[1] = 0.10 / 9
+case_probs[1, 7] = 0.90
+case_probs[2, 3] = 0.91
+
+# 위 확률을 재현하는 점수를 준비합니다.
+case_logits = case_probs.log()
+case_y = torch.tensor([7, 7, 7], dtype=torch.long)
+case_losses = nn.CrossEntropyLoss(reduction=&quot;none&quot;)(case_logits, case_y)
+case_mean_loss = nn.CrossEntropyLoss()(case_logits, case_y)
+
+print(&quot;확률 합:&quot;, case_probs.sum(dim=1))
+print(&quot;예측 클래스:&quot;, case_logits.argmax(dim=1))
+print(&quot;개별 손실:&quot;, case_losses)
+print(&quot;평균 손실:&quot;, round(case_mean_loss.item(), 4))
+print(&quot;직접 계산:&quot;, -case_probs[:, 7].log())
+</pre><div><div class="row" style="margin:0 0 14px"><button id="show-output">저장된 실행 결과 보기</button><a href="cross-entropy-example.py" download style="font-size:16px">Python 코드 받기</a></div><pre id="output" class="output" aria-live="polite">버튼을 누르면 실제 실행해 저장한 출력이 표시됩니다.</pre><p class="minor" style="margin-top:18px"><code>reduction="none"</code>: A·B·C 각각의 손실<br>기본 설정: 세 손실의 평균<br><code>argmax(dim=1)</code>: 각 행에서 가장 큰 점수의 숫자</p><p class="minor" style="margin-top:12px"><code>-case_probs[:, 7].log()</code>:<br>정답 7의 확률로 직접 계산해 같은 값인지 확인</p></div></div>
+ <footer class="foot"><span>PyTorch 2.13.0 · CPU · 저장된 실행 결과 표시 · 웹 서버에서 Python을 실행하지 않습니다.</span><span>04 / 05</span></footer>
+</section>
+<section class="slide" data-title="강의에서 전달할 핵심">
+ <div class="eyebrow">확인과 정리</div><h2>정답에 준 확률이 높을수록 손실이 작습니다</h2>
+ <p class="summary">같은 정답을 맞힌 두 예측도<br>손실은 다를 수 있습니다.</p>
+ <p>정답 7에 40%를 준 A와 90%를 준 B 중, 손실이 작은 쪽은?</p><div class="row"><button id="answer-a">A · 40%</button><button id="answer-b">B · 90%</button></div><p class="answer" id="answer" aria-live="polite"></p>
+ <p class="minor">이 코드의 역할: 설명용 확률 만들기 → 손실 계산 → 세 상황 비교</p>
+ <p style="margin-top:22px;font-size:19px"><a href="lecture.html#slide-16">전체 강의의 교차 엔트로피 페이지로 →</a></p>
+ <footer class="foot"><span><a href="https://docs.pytorch.org/docs/stable/generated/torch.nn.CrossEntropyLoss.html" target="_blank" rel="noopener">PyTorch 공식 CrossEntropyLoss 설명</a></span><span>05 / 05</span></footer>
+</section>
+</div><nav class="toolbar" aria-label="페이지 이동"><button id="prev" aria-label="이전 페이지">←</button><span id="counter" class="counter">1 / 5</span><button id="next" aria-label="다음 페이지">→</button><div class="pages" id="pages"></div><a href="lecture.html#slide-16">전체 강의</a><button id="fullscreen">전체 화면</button></nav></main>
+<script id="execution-data" type="application/json">{"stdout": "확률 합: tensor([1., 1., 1.])\n예측 클래스: tensor([7, 7, 3])\n개별 손실: tensor([0.9163, 0.1054, 4.6052])\n평균 손실: 1.8756\n직접 계산: tensor([0.9163, 0.1054, 4.6052])\n", "torch": "2.13.0"}</script>
+<script>
+'use strict';
+const $=s=>document.querySelector(s),$$=s=>Array.from(document.querySelectorAll(s));
+const slides=$$('.slide');let current=0;
+function go(i){current=Math.max(0,Math.min(4,i));slides.forEach((s,j)=>{s.classList.toggle('active',j===current);s.setAttribute('aria-hidden',String(j!==current));});$('#counter').textContent=`${current+1} / 5`;$('#prev').disabled=current===0;$('#next').disabled=current===4;$$('#pages button').forEach((b,j)=>b.setAttribute('aria-current',j===current?'page':'false'));history.replaceState(null,'',`#slide-${current+1}`);document.title=`${slides[current].dataset.title} · 교차 엔트로피 해설`;}
+slides.forEach((s,i)=>{const b=document.createElement('button');b.textContent=i+1;b.setAttribute('aria-label',`${i+1}페이지 ${s.dataset.title}`);b.onclick=()=>go(i);$('#pages').appendChild(b);});$('#prev').onclick=()=>go(current-1);$('#next').onclick=()=>go(current+1);
+document.addEventListener('keydown',e=>{if(e.ctrlKey||e.metaKey||e.altKey||e.target.closest('input,textarea,select'))return;if(['ArrowRight','PageDown'].includes(e.key)){e.preventDefault();go(current+1);}if(['ArrowLeft','PageUp'].includes(e.key)){e.preventDefault();go(current-1);}if(e.key==='Home'){e.preventDefault();go(0);}if(e.key==='End'){e.preventDefault();go(4);}});
+window.addEventListener('hashchange',()=>go((Number(location.hash.replace('#slide-',''))||1)-1));
+$('#fullscreen').onclick=async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else await $('#app').requestFullscreen();}catch{$('#fullscreen').textContent='브라우저 전체 화면 사용';}};
+const cases=[{p:.4,other:.6/9,code:'case_probs[0] = 0.60 / 9\ncase_probs[0, 7] = 0.40',note:'7에 40%, 나머지 9개 숫자에\n남은 60%를 똑같이 나눕니다.'},{p:.9,other:.1/9,code:'case_probs[1] = 0.10 / 9\ncase_probs[1, 7] = 0.90',note:'7에 90%, 나머지 9개 숫자에\n남은 10%를 똑같이 나눕니다.'},{p:.01,other:.01,code:'case_probs[2, 3] = 0.91',note:'처음 넣었던 1%를 유지하고,\n숫자 3만 91%로 올립니다.\n정답 7의 확률은 1%입니다.'}];
+function choose(n){const c=cases[n],p=Array(10).fill(c.other);p[7]=c.p;if(n===2)p[3]=.91;$('#case-code').textContent=c.code;$('#case-note').innerText=c.note;$('#bars').innerHTML=p.map((v,i)=>`<div class="barcol ${i===7?'target':''}"><span class="value">${(v*100).toFixed(1)}%</span><div class="bar" style="height:${v*100}%"></div><span class="label">${i}</span></div>`).join('');$('#case-result').textContent=`확률 합 100% · 예측 ${p.indexOf(Math.max(...p))} · 정답 7`;$$('#case-buttons button').forEach((b,i)=>b.setAttribute('aria-pressed',String(i===n)));}
+$$('#case-buttons button').forEach(b=>b.onclick=()=>choose(+b.dataset.case));choose(0);
+const execution=JSON.parse($('#execution-data').textContent);$('#show-output').onclick=()=>{$('#output').textContent=execution.stdout;$('#show-output').textContent='저장된 실행 결과 표시 중';};
+function answer(correct){$('#answer').textContent=correct?'맞았습니다. B는 정답에 90%를 줘서 손실이 약 0.1054로 더 작습니다.':'정답 7에 준 확률을 비교해 보세요. B의 90%가 더 높아서 손실이 더 작습니다.';$('#answer-a').setAttribute('aria-pressed',String(!correct));$('#answer-b').setAttribute('aria-pressed',String(correct));}$('#answer-a').onclick=()=>answer(false);$('#answer-b').onclick=()=>answer(true);
+go((Number(location.hash.replace('#slide-',''))||1)-1);
+</script></body></html>
