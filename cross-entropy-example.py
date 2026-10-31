@@ -1,23 +1,40 @@
-"""설명용으로 직접 정한 확률 세 가지를 비교합니다."""
+# 이 Python 파일과 samples.json을 같은 폴더에 둡니다.
+import json
+from pathlib import Path
 import torch
 from torch import nn
 
-# 비교를 위해 직접 만든 확률입니다. 실제 모델의 출력이 아닙니다.
-case_probs = torch.full((3, 10), 0.01)
-case_probs[0] = 0.60 / 9
-case_probs[0, 7] = 0.40
-case_probs[1] = 0.10 / 9
-case_probs[1, 7] = 0.90
-case_probs[2, 3] = 0.91
+samples = json.loads(Path(__file__).with_name("samples.json").read_text())["samples"]
+batch_X = torch.tensor(
+    [s["pixels"] for s in samples[:4]], dtype=torch.float32
+).reshape(4, 1, 28, 28) / 255
+batch_y = torch.tensor([s["label"] for s in samples[:4]], dtype=torch.long)
+X, y = batch_X[:1], batch_y[:1]  # 실제 테스트 샘플 #0, 정답 7
 
-# 위 확률을 재현하는 점수를 준비합니다.
-case_logits = case_probs.log()
-case_y = torch.tensor([7, 7, 7], dtype=torch.long)
-case_losses = nn.CrossEntropyLoss(reduction="none")(case_logits, case_y)
-case_mean_loss = nn.CrossEntropyLoss()(case_logits, case_y)
+class DigitModel(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.flatten = nn.Flatten()
+        self.layers = nn.Sequential(
+            nn.Linear(784, 512), nn.ReLU(),
+            nn.Linear(512, 512), nn.ReLU(),
+            nn.Linear(512, 10),
+        )
 
-print("확률 합:", case_probs.sum(dim=1))
-print("예측 클래스:", case_logits.argmax(dim=1))
-print("개별 손실:", case_losses)
-print("평균 손실:", round(case_mean_loss.item(), 4))
-print("직접 계산:", -case_probs[:, 7].log())
+    def forward(self, images):
+        flat = self.flatten(images)
+        return self.layers(flat)
+
+torch.manual_seed(42)
+torch.set_printoptions(precision=4, sci_mode=False)
+model = DigitModel()  # PyTorch가 초기값을 준비한 모델
+
+# X와 y는 같은 MNIST 샘플에서 가져온 값입니다.
+with torch.no_grad():
+    logits = model(X)
+    loss = nn.CrossEntropyLoss()(logits, y)
+print("점수 형태:", tuple(logits.shape))
+print("예측 번호:", logits.argmax(dim=1).tolist())
+print("데이터의 정답:", y.tolist())
+print("손실 형태:", tuple(loss.shape))
+print("손실 값:", round(loss.item(), 4))
